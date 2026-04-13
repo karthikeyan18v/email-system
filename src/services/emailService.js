@@ -13,7 +13,7 @@ export default async function sendEmail(to, from, message) {
       sender: { email: from, name: "Karthikeyan" },
       to: [{ email: to }],
       subject: "Quick question",
-      htmlContent: message,
+      textContent: message,
     },
     {
       headers: {
