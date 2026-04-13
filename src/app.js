@@ -1,11 +1,16 @@
 import "dotenv/config";
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 import routes from "./api/routes.js";
 import webhook from "./webhook/sendgridWebhook.js";
 import { connectDB } from "./config/db.js";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 connectDB();
 

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Marketing System</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .container { width: 100%; max-width: 700px; padding: 20px; }
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); overflow: hidden; margin-bottom: 20px; }
+    .header { background: #1e293b; padding: 30px; text-align: center; }
+    .header h1 { color: #fff; font-size: 20px; letter-spacing: 1px; }
+    .header p { color: #94a3b8; font-size: 13px; margin-top: 6px; }
+    .body { padding: 30px; }
+    .section { margin-bottom: 24px; }
+    .section h3 { color: #1e293b; font-size: 15px; margin-bottom: 10px; }
+    .upload-area { border: 2px dashed #d1d5db; border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .upload-area:hover { border-color: #6366f1; background: #f8f7ff; }
+    .upload-area.dragover { border-color: #6366f1; background: #eef2ff; }
+    .upload-area p { color: #64748b; font-size: 14px; }
+    .upload-area .icon { font-size: 36px; margin-bottom: 8px; }
+    .file-name { margin-top: 10px; color: #1e293b; font-weight: 600; font-size: 14px; }
+    input[type="file"] { display: none; }
+    .btn { background: #1e293b; color: #fff; border: none; border-radius: 8px; padding: 14px 32px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; }
+    .btn:hover { background: #334155; }
+    .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    .result { margin-top: 20px; padding: 16px; border-radius: 8px; font-size: 14px; display: none; }
+    .result.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; display: block; }
+    .result.error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; display: block; }
+    .result.loading { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; display: block; }
+    .stats { display: flex; gap: 12px; margin-top: 16px; }
+    .stat { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: center; }
+    .stat .num { font-size: 28px; font-weight: 700; color: #1e293b; }
+    .stat .label { font-size: 12px; color: #64748b; margin-top: 4px; }
+    .info { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+    .info p { color: #64748b; font-size: 13px; line-height: 1.6; }
+    .info code { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+    .webhook-section { margin-top: 16px; }
+    .webhook-form { display: flex; gap: 8px; margin-top: 10px; }
+    .webhook-form input { flex: 1; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px 14px; font-size: 14px; outline: none; }
+    .webhook-form input:focus { border-color: #6366f1; }
+    .webhook-form button { background: #1e293b; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge.green { background: #dcfce7; color: #166534; }
+    .badge.red { background: #fee2e2; color: #991b1b; }
+    .health-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; justify-content: flex-end; }
+    .health-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .health-dot.online { background: #22c55e; }
+    .health-dot.offline { background: #ef4444; }
+    .health-text { font-size: 12px; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1>EMAIL MARKETING SYSTEM</h1>
+        <p>High-Volume Outbound Email POC</p>
+      </div>
+      <div class="body">
+        <div class="health-bar">
+          <div class="health-dot" id="healthDot"></div>
+          <span class="health-text" id="healthText">Checking...</span>
+        </div>
+
+        <div class="section">
+          <h3>Upload CSV</h3>
+          <div class="upload-area" id="dropZone" onclick="document.getElementById('csvFile').click()">
+            <div class="icon">&#128196;</div>
+            <p>Click or drag & drop your CSV file here</p>
+            <p style="font-size:12px; color:#94a3b8; margin-top:6px;">Required columns: email, name, company</p>
+            <div class="file-name" id="fileName"></div>
+          </div>
+          <input type="file" id="csvFile" accept=".csv">
+        </div>
+
+        <button class="btn" id="sendBtn" onclick="sendEmails()" disabled>Send Emails</button>
+
+        <div class="result" id="result"></div>
+
+        <div class="stats" id="stats" style="display:none;">
+          <div class="stat">
+            <div class="num" id="queuedCount">0</div>
+            <div class="label">Queued</div>
+          </div>
+          <div class="stat">
+            <div class="num" id="sentCount">0</div>
+            <div class="label">Sent</div>
+          </div>
+          <div class="stat">
+            <div class="num" id="failedCount">0</div>
+            <div class="label">Failed</div>
+          </div>
+        </div>
+
+        <div class="webhook-section">
+          <h3>Test Bounce Webhook</h3>
+          <p style="font-size:13px; color:#64748b; margin-top:4px;">Simulate a bounce or spam complaint to suppress an email address.</p>
+          <div class="webhook-form">
+            <input type="email" id="webhookEmail" placeholder="email@example.com">
+            <select id="webhookEvent" style="border:1px solid #d1d5db; border-radius:8px; padding:10px; font-size:13px; outline:none;">
+              <option value="bounce">Bounce</option>
+              <option value="spam">Spam</option>
+            </select>
+            <button onclick="testWebhook()">Suppress</button>
+          </div>
+          <div class="result" id="webhookResult" style="margin-top:10px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="body">
+        <div class="info">
+          <h3 style="margin-bottom:8px; color:#1e293b; font-size:14px;">How it works</h3>
+          <p>1. Upload a CSV with columns: <code>email</code>, <code>name</code>, <code>company</code></p>
+          <p>2. Each row is queued as a job in Redis (BullMQ)</p>
+          <p>3. Worker personalizes and sends via Brevo API</p>
+          <p>4. Bounced/spam emails are suppressed automatically</p>
+          <p style="margin-top:10px;">Check <strong>Spam</strong>, <strong>Promotions</strong>, or <strong>All Mail</strong> if emails don't appear in inbox.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+    let selectedFile = null;
+
+    // Health check
+    fetch(API + '/health')
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('healthDot').classList.add(d.status === 'ok' ? 'online' : 'offline');
+        document.getElementById('healthText').textContent = d.status === 'ok' ? 'System Online' : 'System Offline';
+      })
+      .catch(() => {
+        document.getElementById('healthDot').classList.add('offline');
+        document.getElementById('healthText').textContent = 'System Offline';
+      });
+
+    // File selection
+    document.getElementById('csvFile').addEventListener('change', function(e) {
+      selectedFile = e.target.files[0];
+      if (selectedFile) {
+        document.getElementById('fileName').textContent = selectedFile.name;
+        document.getElementById('sendBtn').disabled = false;
+      }
+    });
+
+    // Drag & drop
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      selectedFile = e.dataTransfer.files[0];
+      if (selectedFile) {
+        document.getElementById('fileName').textContent = selectedFile.name;
+        document.getElementById('sendBtn').disabled = false;
+      }
+    });
+
+    // Send emails
+    async function sendEmails() {
+      const btn = document.getElementById('sendBtn');
+      const result = document.getElementById('result');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      result.className = 'result loading';
+      result.textContent = 'Uploading CSV and queueing emails...';
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        const res = await fetch(API + '/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (res.ok) {
+          result.className = 'result success';
+          result.textContent = data.message;
+          document.getElementById('stats').style.display = 'flex';
+          document.getElementById('queuedCount').textContent = data.count || 0;
+          document.getElementById('sentCount').textContent = data.sent || data.count || 0;
+          document.getElementById('failedCount').textContent = data.failed || 0;
+        } else {
+          result.className = 'result error';
+          result.textContent = data.error || 'Upload failed';
+        }
+      } catch (err) {
+        result.className = 'result error';
+        result.textContent = 'Connection error: ' + err.message;
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Send Emails';
+    }
+
+    // Webhook test
+    async function testWebhook() {
+      const email = document.getElementById('webhookEmail').value;
+      const event = document.getElementById('webhookEvent').value;
+      const wr = document.getElementById('webhookResult');
+
+      if (!email) { wr.className = 'result error'; wr.textContent = 'Enter an email address'; return; }
+
+      try {
+        const res = await fetch(API + '/webhook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([{ event, email }])
+        });
+        if (res.ok) {
+          wr.className = 'result success';
+          wr.textContent = email + ' added to suppression list (' + event + ')';
+        } else {
+          wr.className = 'result error';
+          wr.textContent = 'Webhook failed';
+        }
+      } catch (err) {
+        wr.className = 'result error';
+        wr.textContent = 'Error: ' + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
