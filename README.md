@@ -94,36 +94,6 @@ Configure your Brevo/SendGrid webhook to hit:
 POST http://<host>/webhook
 ```
 
-Bounces and spam complaints are persisted in the `suppressions` collection and blocked on the next send.
-
-## Deployment (Render)
-
-### 1. Push to GitHub
-
-```bash
-cd email-system
-git init
-git add .
-git commit -m "Initial commit - email marketing system"
-git remote add origin https://github.com/YOUR_USERNAME/email-system.git
-git push -u origin main
-```
-
-### 2. Deploy API (Web Service)
-
-1. Go to [render.com](https://render.com) → New → Web Service
-2. Connect your GitHub repo
-3. Settings:
-   - Build Command: `npm install`
-   - Start Command: `npm start`
-4. Add environment variables: `PORT`, `MONGO_URI`, `REDIS_URL`, `BREVO_API_KEY`, `SENDERS`
-
-### 3. Deploy Worker (Background Worker)
-
-1. Render → New → Background Worker
-2. Same repo
-3. Start Command: `npm run worker`
-4. Same environment variables
 
 ### 4. Set Webhook URL
 
